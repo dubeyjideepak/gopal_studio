@@ -1,0 +1,107 @@
+name: gopal_studio_pro
+description: "Gopal Photography Studio - Professional Billing Software"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.0
+  firebase_storage: ^12.3.6
+  firebase_remote_config: ^5.1.4
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Local Database
+  drift: ^2.22.0
+  drift_flutter: ^0.2.3
+  sqlite3_flutter_libs: ^0.5.24
+
+  # PDF & Printing
+  pdf: ^3.11.2
+  printing: ^5.14.1
+
+  # QR Code
+  qr_flutter: ^4.1.0
+  qr_code_scanner_plus: ^2.0.5
+
+  # Image
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
+  flutter_image_compress: ^2.3.0
+
+  # Navigation
+  go_router: ^14.6.2
+
+  # UI
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.2
+  shimmer: ^3.0.0
+  fl_chart: ^0.69.0
+  lottie: ^3.2.0
+  intl: ^0.20.1
+  gap: ^3.0.1
+  badges: ^3.1.2
+
+  # Networking
+  dio: ^5.7.0
+  connectivity_plus: ^6.1.1
+
+  # WhatsApp & Share
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.2
+
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+
+  # Utils
+  uuid: ^4.5.1
+  path_provider: ^2.1.5
+  permission_handler: ^11.3.1
+  package_info_plus: ^8.1.3
+  shared_preferences: ^2.3.3
+  collection: ^1.19.0
+  equatable: ^2.0.7
+
+  # AI
+  google_generative_ai: ^0.4.7
+
+  # Misc
+  flutter_svg: ^2.0.15
+  dotted_border: ^2.1.0
+  another_flushbar: ^1.12.30
+  modal_bottom_sheet: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  drift_dev: ^2.22.0
+  riverpod_generator: ^2.6.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
+    - assets/lottie/
+
+  fonts:
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay-Regular.ttf
+        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlayfairDisplay-Italic.ttf
+          style: italic
