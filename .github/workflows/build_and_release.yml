@@ -32,7 +32,69 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
+      - name: Patch Firebase CMakeLists for Windows
+        shell: pwsh
+        run: |
+          # 1. Scan Pub Cache and patch any CMakeLists with old minimum or inject Firebase SDK patch
+          $pubCaches = @(
+            "$env:LOCALAPPDATA\Pub\Cache",
+            "$env:USERPROFILE\.pub-cache",
+            "$env:USERPROFILE\AppData\Local\Pub\Cache"
+          ) | Where-Object { Test-Path $_ }
+
+          foreach ($pubCache in $pubCaches) {
+            Write-Host "Scanning pub cache at: $pubCache"
+            Get-ChildItem -Path $pubCache -Recurse -Filter "CMakeLists.txt" -ErrorAction SilentlyContinue | ForEach-Object {
+              $path = $_.FullName
+              $text = Get-Content -Raw -Path $path
+              $modified = $false
+
+              if ($text -match 'FIREBASE_CPP_SDK_DIR' -and $text -notmatch '_sdk_cmake_fixed') {
+                $inject = @'
+    # _sdk_cmake_fixed: Patch extracted C++ SDK CMakeLists.txt for CMake 3.31+ compatibility
+    if(EXISTS "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt")
+        file(READ "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt" _sdk_cmake_txt)
+        string(REGEX REPLACE "cmake_minimum_required\\s*\\([^\\)]*\\)" "cmake_minimum_required(VERSION 3.5)" _sdk_cmake_txt "${_sdk_cmake_txt}")
+        file(WRITE "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt" "${_sdk_cmake_txt}")
+    endif()
+'@
+                $text = $text -replace 'add_subdirectory\(\$\{FIREBASE_CPP_SDK_DIR\}', "$inject`nadd_subdirectory(`${FIREBASE_CPP_SDK_DIR}"
+                $modified = $true
+                Write-Host "Injected CMake auto-patcher into: $path"
+              }
+
+              if ($text -match 'cmake_minimum_required\s*\(\s*VERSION\s*[0-2]\.') {
+                $text = $text -replace 'cmake_minimum_required\s*\(\s*VERSION\s*[0-2]\.[0-9]+(\.[0-9]+)?\s*\)', 'cmake_minimum_required(VERSION 3.5)'
+                $modified = $true
+                Write-Host "Patched minimum CMake version in: $path"
+              }
+
+              if ($modified) {
+                Set-Content -Path $path -Value $text -Encoding UTF8
+              }
+            }
+          }
+
+          # 2. Pre-download, pre-extract and patch firebase_cpp_sdk_windows before CMake runs
+          $extractDir = "$PWD\build\windows\x64\extracted"
+          New-Item -ItemType Directory -Force -Path $extractDir
+          $zipPath = "$PWD\build\windows\x64\firebase_cpp_sdk_windows_12.7.0.zip"
+          Write-Host "Pre-downloading Firebase C++ SDK 12.7.0..."
+          Invoke-WebRequest -Uri "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_windows_12.7.0.zip" -OutFile $zipPath
+          Write-Host "Extracting Firebase C++ SDK..."
+          Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+
+          $sdkCmake = "$extractDir\firebase_cpp_sdk_windows\CMakeLists.txt"
+          if (Test-Path $sdkCmake) {
+            $content = Get-Content -Raw -Path $sdkCmake
+            $content = $content -replace 'cmake_minimum_required\s*\([^\\)]*\)', 'cmake_minimum_required(VERSION 3.5)'
+            Set-Content -Path $sdkCmake -Value $content -Encoding UTF8
+            Write-Host "Successfully patched $sdkCmake with VERSION 3.5!"
+          }
+
       - name: Build Windows Release
+        env:
+          FIREBASE_CPP_SDK_DIR: ${{ github.workspace }}\build\windows\x64\extracted\firebase_cpp_sdk_windows
         run: flutter build windows --release
 
       - name: Install Inno Setup
