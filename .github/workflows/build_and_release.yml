@@ -104,7 +104,7 @@ jobs:
             Get-ChildItem -Path $pubCache -Recurse -Filter "vector.h" -ErrorAction SilentlyContinue | ForEach-Object {
               $vText = Get-Content -Raw -Path $_.FullName
               if ($vText -match 'typedef std::vector<ElementType> InternalVectorType;') {
-                $vText = $vText.Replace('struct DefaultVectorTraits : public ElementTraits<T> {', "struct DefaultVectorTraits : public ElementTraits<T> {`n  using ElementType = typename ElementTraits<T>::ElementType;`n  using ElementTraits<T>::Wrap;`n  using ElementTraits<T>::CopyTo;")
+                $vText = $vText.Replace('struct DefaultVectorTraits : public ElementTraits<T> {', "struct DefaultVectorTraits : public ElementTraits<T> {`n  using ElementType = typename ElementTraits<T>::ElementType;")
                 $vText = $vText.Replace('typename RuntimeClass::IVector::T_complex', 'typename ABI::Windows::Foundation::Collections::IVector<T>::T_complex')
                 Set-Content -Path $_.FullName -Value $vText -Encoding UTF8
                 Write-Host "Patched vector.h in $($_.FullName)"
