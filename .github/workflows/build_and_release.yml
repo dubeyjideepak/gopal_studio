@@ -50,15 +50,8 @@ jobs:
               $modified = $false
 
               if ($text -match 'FIREBASE_CPP_SDK_DIR' -and $text -notmatch '_sdk_cmake_fixed') {
-                $inject = @'
-    # _sdk_cmake_fixed: Patch extracted C++ SDK CMakeLists.txt for CMake 3.31+ compatibility
-    if(EXISTS "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt")
-        file(READ "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt" _sdk_cmake_txt)
-        string(REGEX REPLACE "cmake_minimum_required\\s*\\([^\\)]*\\)" "cmake_minimum_required(VERSION 3.5)" _sdk_cmake_txt "${_sdk_cmake_txt}")
-        file(WRITE "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt" "${_sdk_cmake_txt}")
-    endif()
-'@
-                $text = $text -replace 'add_subdirectory\(\$\{FIREBASE_CPP_SDK_DIR\}', "$inject`nadd_subdirectory(`${FIREBASE_CPP_SDK_DIR}"
+                $hook = 'if(EXISTS "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt")' + [System.Environment]::NewLine + '  file(READ "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt" _s)' + [System.Environment]::NewLine + '  string(REGEX REPLACE "cmake_minimum_required\\s*\\([^)]*\\)" "cmake_minimum_required(VERSION 3.5)" _s "${_s}")' + [System.Environment]::NewLine + '  file(WRITE "${FIREBASE_CPP_SDK_DIR}/CMakeLists.txt" "${_s}")' + [System.Environment]::NewLine + 'endif() # _sdk_cmake_fixed' + [System.Environment]::NewLine
+                $text = $text.Replace('add_subdirectory(${FIREBASE_CPP_SDK_DIR}', $hook + 'add_subdirectory(${FIREBASE_CPP_SDK_DIR}')
                 $modified = $true
                 Write-Host "Injected CMake auto-patcher into: $path"
               }
@@ -87,7 +80,7 @@ jobs:
           $sdkCmake = "$extractDir\firebase_cpp_sdk_windows\CMakeLists.txt"
           if (Test-Path $sdkCmake) {
             $content = Get-Content -Raw -Path $sdkCmake
-            $content = $content -replace 'cmake_minimum_required\s*\([^\\)]*\)', 'cmake_minimum_required(VERSION 3.5)'
+            $content = $content -replace 'cmake_minimum_required\s*\([^)]*\)', 'cmake_minimum_required(VERSION 3.5)'
             Set-Content -Path $sdkCmake -Value $content -Encoding UTF8
             Write-Host "Successfully patched $sdkCmake with VERSION 3.5!"
           }
