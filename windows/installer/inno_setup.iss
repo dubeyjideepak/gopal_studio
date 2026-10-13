@@ -7,6 +7,10 @@
 #define MyAppPublisher "Gopal Studio"
 #define MyAppExeName "StudioBillPro.exe"
 
+#ifndef ReleaseDir
+  #define ReleaseDir "..\..\build\windows\x64\runner\Release"
+#endif
+
 [Setup]
 ; Unique GUID for uninstaller / upgrade detection
 AppId={{E61A132C-4A23-488F-9B6C-77E596CEB442}
@@ -32,8 +36,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ; Copy main binary and all Flutter DLLs, plugins, and data folders
-Source: "..\..\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ReleaseDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ReleaseDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "{#MyAppExeName}"
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"

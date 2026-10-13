@@ -2,6 +2,8 @@ name: Build and Release StudioBill Pro
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -37,13 +39,31 @@ jobs:
         run: choco install innosetup -y
 
       - name: Compile Windows Setup Installer (.exe)
+        shell: pwsh
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows\installer\inno_setup.iss
+          New-Item -ItemType Directory -Force -Path build\windows\installer
+          $ReleaseDir = if (Test-Path "build\windows\x64\runner\Release\StudioBillPro.exe") {
+            "build\windows\x64\runner\Release"
+          } elseif (Test-Path "build\windows\runner\Release\StudioBillPro.exe") {
+            "build\windows\runner\Release"
+          } else {
+            Get-ChildItem -Path "build\windows" -Filter "StudioBillPro.exe" -Recurse | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+          }
+          Write-Host "Found Release Dir: $ReleaseDir"
+          $FullReleasePath = (Resolve-Path $ReleaseDir).Path
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DReleaseDir=$FullReleasePath" windows\installer\inno_setup.iss
 
       - name: Create Portable Zip
         shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\installer\StudioBillPro-Windows-Portable.zip
+          $ReleaseDir = if (Test-Path "build\windows\x64\runner\Release\StudioBillPro.exe") {
+            "build\windows\x64\runner\Release"
+          } elseif (Test-Path "build\windows\runner\Release\StudioBillPro.exe") {
+            "build\windows\runner\Release"
+          } else {
+            Get-ChildItem -Path "build\windows" -Filter "StudioBillPro.exe" -Recurse | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+          }
+          Compress-Archive -Path "$ReleaseDir\*" -DestinationPath "build\windows\installer\StudioBillPro-Windows-Portable.zip" -Force
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
