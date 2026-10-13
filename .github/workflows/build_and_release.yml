@@ -15,6 +15,9 @@ jobs:
   build-windows:
     name: Build Windows Desktop (.exe Installer & Portable Zip)
     runs-on: windows-latest
+    env:
+      CL: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
+      _CL_: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
 
     steps:
       - name: Checkout Code
@@ -81,13 +84,27 @@ jobs:
           if (Test-Path $sdkCmake) {
             $content = Get-Content -Raw -Path $sdkCmake
             $content = $content -replace 'cmake_minimum_required\s*\([^)]*\)', 'cmake_minimum_required(VERSION 3.5)'
+            $extraFlags = [System.Environment]::NewLine + 'add_compile_options(/await)' + [System.Environment]::NewLine + 'add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS)' + [System.Environment]::NewLine
+            $content = $content + $extraFlags
             Set-Content -Path $sdkCmake -Value $content -Encoding UTF8
-            Write-Host "Successfully patched $sdkCmake with VERSION 3.5!"
+            Write-Host "Successfully patched $sdkCmake with VERSION 3.5 and coroutine flags!"
+          }
+
+          # 3. Patch any headers in extracted SDK that include experimental/coroutine
+          Get-ChildItem -Path "$extractDir\firebase_cpp_sdk_windows" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue | ForEach-Object {
+            $hText = Get-Content -Raw -Path $_.FullName
+            if ($hText -match 'experimental/coroutine') {
+              $hText = "#ifndef _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING`n#define _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING 1`n#endif`n" + $hText
+              Set-Content -Path $_.FullName -Value $hText -Encoding UTF8
+              Write-Host "Injected coroutine suppression into header: $($_.FullName)"
+            }
           }
 
       - name: Build Windows Release
         env:
           FIREBASE_CPP_SDK_DIR: ${{ github.workspace }}\build\windows\x64\extracted\firebase_cpp_sdk_windows
+          CL: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
+          _CL_: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
         run: flutter build windows --release
 
       - name: Install Inno Setup
