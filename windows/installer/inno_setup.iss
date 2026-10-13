@@ -1,0 +1,43 @@
+; Inno Setup Script for StudioBill Pro (Windows Desktop Installer)
+; To compile: Download Inno Setup (https://jrsoftware.org/isdl.php)
+; Command line: iscc windows/installer/inno_setup.iss
+
+#define MyAppName "StudioBill Pro"
+#define MyAppVersion "1.0.0"
+#define MyAppPublisher "Gopal Studio"
+#define MyAppExeName "StudioBillPro.exe"
+
+[Setup]
+; Unique GUID for uninstaller / upgrade detection
+AppId={{E61A132C-4A23-488F-9B6C-77E596CEB442}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+DefaultDirName={autopf}\{#MyAppName}
+DisableProgramGroupPage=yes
+OutputDir=..\..\build\windows\installer
+OutputBaseFilename=StudioBillPro_v{#MyAppVersion}_Setup
+SetupIconFile=..\runner\resources\app_icon.ico
+Compression=lzma2/ultra64
+SolidCompression=yes
+WizardStyle=modern
+ArchitecturesInstallIn64BitMode=x64compatible
+PrivilegesRequired=lowest
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+
+[Files]
+; Copy main binary and all Flutter DLLs, plugins, and data folders
+Source: "..\..\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

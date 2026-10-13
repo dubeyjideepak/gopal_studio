@@ -5,6 +5,7 @@ import '../shared/models/bill_model.dart';
 import '../shared/models/customer_model.dart';
 import '../shared/models/business_profile_model.dart';
 import '../core/constants/app_constants.dart';
+import 'cloud_backup_service.dart';
 
 class LocalDbService {
   static LocalDbService? _instance;
@@ -30,12 +31,15 @@ class LocalDbService {
     return BusinessProfile.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
-  Future<void> saveBusinessProfile(BusinessProfile profile) async {
+  Future<void> saveBusinessProfile(BusinessProfile profile, {bool syncToCloud = true}) async {
     await init();
     await _prefs.setString(
       AppConstants.keyBusinessProfile,
       jsonEncode(profile.toJson()),
     );
+    if (syncToCloud) {
+      CloudBackupService.instance.backupBusinessProfile(profile).ignore();
+    }
   }
 
   // ─── Bill Number ─────────────────────────────────────────────────────────
@@ -73,7 +77,7 @@ class LocalDbService {
     }
   }
 
-  Future<void> saveBill(Bill bill) async {
+  Future<void> saveBill(Bill bill, {bool syncToCloud = true}) async {
     await init();
     final bills = await getAllBills();
     final idx = bills.indexWhere((b) => b.id == bill.id);
@@ -86,15 +90,21 @@ class LocalDbService {
       'all_bills',
       jsonEncode(bills.map((b) => b.toJson()).toList()),
     );
+    if (syncToCloud) {
+      CloudBackupService.instance.backupBill(bill).ignore();
+    }
   }
 
-  Future<void> deleteBill(String id) async {
+  Future<void> deleteBill(String id, {bool syncToCloud = true}) async {
     final bills = await getAllBills();
     bills.removeWhere((b) => b.id == id);
     await _prefs.setString(
       'all_bills',
       jsonEncode(bills.map((b) => b.toJson()).toList()),
     );
+    if (syncToCloud) {
+      CloudBackupService.instance.deleteBill(id).ignore();
+    }
   }
 
   Future<List<Bill>> getBillsByCustomer(String customerId) async {
@@ -131,7 +141,7 @@ class LocalDbService {
     }
   }
 
-  Future<void> saveCustomer(Customer customer) async {
+  Future<void> saveCustomer(Customer customer, {bool syncToCloud = true}) async {
     await init();
     final customers = await getAllCustomers();
     final idx = customers.indexWhere((c) => c.id == customer.id);
@@ -144,15 +154,21 @@ class LocalDbService {
       'all_customers',
       jsonEncode(customers.map((c) => c.toJson()).toList()),
     );
+    if (syncToCloud) {
+      CloudBackupService.instance.backupCustomer(customer).ignore();
+    }
   }
 
-  Future<void> deleteCustomer(String id) async {
+  Future<void> deleteCustomer(String id, {bool syncToCloud = true}) async {
     final customers = await getAllCustomers();
     customers.removeWhere((c) => c.id == id);
     await _prefs.setString(
       'all_customers',
       jsonEncode(customers.map((c) => c.toJson()).toList()),
     );
+    if (syncToCloud) {
+      CloudBackupService.instance.deleteCustomer(id).ignore();
+    }
   }
 
   Future<Customer> createCustomer({

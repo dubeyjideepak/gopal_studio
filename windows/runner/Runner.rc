@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.gopalstudio" "\0"
-            VALUE "FileDescription", "gopal_studio_pro" "\0"
+            VALUE "FileDescription", "StudioBill Pro" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "gopal_studio_pro" "\0"
+            VALUE "InternalName", "StudioBill Pro" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.gopalstudio. All rights reserved." "\0"
-            VALUE "OriginalFilename", "gopal_studio_pro.exe" "\0"
-            VALUE "ProductName", "gopal_studio_pro" "\0"
+            VALUE "OriginalFilename", "StudioBill_Pro.exe" "\0"
+            VALUE "ProductName", "StudioBill Pro" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

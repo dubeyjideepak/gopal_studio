@@ -1,6 +1,6 @@
 class AppConstants {
   // App Info
-  static const String appName = 'Gopal Studio Pro';
+  static const String appName = 'StudioBill Pro';
   static const String appVersion = '1.0.0';
   static const String tagline = 'Capturing Memory, Creating Story';
 

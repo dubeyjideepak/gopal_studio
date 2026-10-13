@@ -82,11 +82,13 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         final sendWA = await _showWhatsAppDialog(updatedBill, amount);
         if (sendWA == true) {
           final profile = await LocalDbService.instance.getBusinessProfile();
-          await WhatsAppService.instance.shareBill(
-            bill: updatedBill,
-            business: profile,
-            isPartial: !updatedBill.isFullyPaid,
-          );
+          if (mounted) {
+            await WhatsAppService.instance.shareDirectToSystemWhatsApp(
+              context: context,
+              bill: updatedBill,
+              business: profile,
+            );
+          }
         }
         if (mounted) {
           context.pop();

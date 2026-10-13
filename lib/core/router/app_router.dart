@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/business_setup_screen.dart';
+import '../../features/auth/screens/app_activation_lock_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/billing/screens/new_bill_screen.dart';
 import '../../features/billing/screens/bill_detail_screen.dart';
@@ -13,13 +14,48 @@ import '../../features/customers/screens/add_customer_screen.dart';
 import '../../features/reports/screens/reports_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settlements/screens/settlement_screen.dart';
+import '../../services/app_activation_service.dart';
 import '../shell/main_shell.dart';
 
+class _RouterRefreshNotifier extends ChangeNotifier {
+  _RouterRefreshNotifier(Ref ref) {
+    ref.listen<AsyncValue<ActivationInfo>>(
+      activationStateProvider,
+      (_, __) => notifyListeners(),
+    );
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final refreshNotifier = _RouterRefreshNotifier(ref);
+
   return GoRouter(
     initialLocation: '/dashboard',
+    refreshListenable: refreshNotifier,
+    redirect: (context, state) {
+      final activationState = ref.read(activationStateProvider);
+      final isLocked = activationState.valueOrNull?.isActive == false;
+      final isLockPath = state.matchedLocation == '/activation-locked';
+
+      if (isLocked && !isLockPath) {
+        return '/activation-locked';
+      }
+
+      if (!isLocked && isLockPath) {
+        return '/dashboard';
+      }
+
+      return null;
+    },
     debugLogDiagnostics: false,
     routes: [
+      // Activation Lock Screen
+      GoRoute(
+        path: '/activation-locked',
+        name: 'activation-locked',
+        builder: (context, state) => const AppActivationLockScreen(),
+      ),
+
       // Auth
       GoRoute(
         path: '/login',

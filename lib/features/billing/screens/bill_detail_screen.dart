@@ -7,8 +7,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/models/bill_model.dart';
 import '../../../services/local_db_service.dart';
 import '../../../services/whatsapp_service.dart';
-import '../../../shared/models/business_profile_model.dart';
-import '../../../services/pdf_service.dart';
 
 final billDetailProvider = FutureProvider.family<Bill?, String>((ref, id) {
   return LocalDbService.instance.getBillById(id);
@@ -21,9 +19,6 @@ class BillDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final billAsync = ref.watch(billDetailProvider(billId));
-    final profileAsync = ref.watch(
-      FutureProvider<BusinessProfile>((ref) => LocalDbService.instance.getBusinessProfile()).future.then((p) => p),
-    );
 
     return billAsync.when(
       data: (bill) {
@@ -50,28 +45,20 @@ class _BillDetailContent extends ConsumerStatefulWidget {
 }
 
 class _BillDetailContentState extends ConsumerState<_BillDetailContent> {
-  bool _isPrinting = false;
+  final bool _isPrinting = false;
 
-  Future<void> _printBill() async {
-    setState(() => _isPrinting = true);
-    try {
-      final profile = await LocalDbService.instance.getBusinessProfile();
-      await PdfService.instance.printBill(widget.bill, profile);
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Print error: $e')));
-    } finally {
-      if (mounted) setState(() => _isPrinting = false);
-    }
+  void _printBill() {
+    context.push('/bill/${widget.bill.id}/preview');
   }
 
-  Future<void> _shareBillWhatsApp({bool isPartial = false}) async {
+  Future<void> _shareBillWhatsApp() async {
     final profile = await LocalDbService.instance.getBusinessProfile();
-    final sent = await WhatsAppService.instance.shareBill(bill: widget.bill, business: profile, isPartial: isPartial);
-    if (!sent && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No mobile number found for this customer')),
-      );
-    }
+    if (!mounted) return;
+    await WhatsAppService.instance.shareDirectToSystemWhatsApp(
+      context: context,
+      bill: widget.bill,
+      business: profile,
+    );
   }
 
   Future<void> _sendReminder() async {
@@ -353,7 +340,7 @@ class _BillDetailContentState extends ConsumerState<_BillDetailContent> {
   IconData _statusIcon(BillStatus s) {
     switch (s) {
       case BillStatus.paid: return Icons.check_circle_rounded;
-      case BillStatus.partial: return Icons.hourglass_half_rounded;
+      case BillStatus.partial: return Icons.hourglass_top_rounded;
       case BillStatus.pending: return Icons.warning_rounded;
       case BillStatus.cancelled: return Icons.cancel_rounded;
     }

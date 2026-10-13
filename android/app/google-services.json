@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "472240647159",
+    "project_id": "appactivations-f47d0",
+    "storage_bucket": "appactivations-f47d0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:472240647159:android:5a7025add7f7fef134dcf2",
+        "android_client_info": {
+          "package_name": "com.gopalstudio.gopal_studio_pro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWo05BOCDpDffytxJUR67NagrqnFjS0JA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

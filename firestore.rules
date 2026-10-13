@@ -1,6 +1,16 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Multi-app activation records and all client data subcollections (bills, customers, profile, backups)
+    match /apps/{appId}/clients/{clientId} {
+      allow read, write: if true;
+      match /{allSubcollections=**} {
+        allow read, write: if true;
+      }
+    }
+    match /app_activations/{activationId} {
+      allow read, write: if true;
+    }
     match /bills/{billId} {
       allow read, write: if true;
     }

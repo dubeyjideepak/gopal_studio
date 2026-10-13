@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -18,24 +19,60 @@ class LoginScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: 110,
+                  height: 110,
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.gold.withOpacity(0.12),
+                    color: AppColors.surfaceLight,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold, width: 2),
+                    border: Border.all(color: AppColors.gold, width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withValues(alpha: 0.35),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.camera_alt_rounded, color: AppColors.gold, size: 48),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/gopal_media_crest.jpg',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.camera_alt_rounded,
+                        color: AppColors.gold,
+                        size: 48,
+                      ),
+                    ),
+                  ),
                 ).animate().scale(begin: const Offset(0.7, 0.7)).fadeIn(),
                 const SizedBox(height: 24),
-                const Text(
-                  'Gopal Studio Pro',
-                  style: TextStyle(fontFamily: 'PlayfairDisplay', color: AppColors.gold, fontSize: 30, fontWeight: FontWeight.bold),
+                Text(
+                  'Gopal',
+                  style: GoogleFonts.greatVibes(
+                    color: AppColors.gold,
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
                 ).animate().fadeIn(delay: 150.ms),
+                Text(
+                  'PHOTOGRAPHY STUDIO PRO',
+                  style: GoogleFonts.inter(
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 3.0,
+                  ),
+                ).animate().fadeIn(delay: 200.ms),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Capturing Memory, Creating Story',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 14, fontStyle: FontStyle.italic),
+                  style: GoogleFonts.inter(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
                   textAlign: TextAlign.center,
                 ).animate().fadeIn(delay: 250.ms),
                 const SizedBox(height: 48),

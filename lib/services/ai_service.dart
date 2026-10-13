@@ -131,9 +131,13 @@ Keep it friendly, respectful, and under 100 words. Use emojis appropriately.
 
   int _editDistance(String s1, String s2) {
     final m = s1.length, n = s2.length;
-    final d = List.generate(m + 1, (i) => List.filled(n + 1, 0));
-    for (var i = 0; i <= m; i++) d[i][0] = i;
-    for (var j = 0; j <= n; j++) d[0][j] = j;
+    final d = List.generate(m + 1, (_) => List<int>.filled(n + 1, 0));
+    for (var i = 0; i <= m; i++) {
+      d[i][0] = i;
+    }
+    for (var j = 0; j <= n; j++) {
+      d[0][j] = j;
+    }
     for (var i = 1; i <= m; i++) {
       for (var j = 1; j <= n; j++) {
         d[i][j] = s1[i - 1] == s2[j - 1]

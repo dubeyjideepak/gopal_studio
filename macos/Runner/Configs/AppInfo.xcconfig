@@ -5,7 +5,7 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = gopal_studio_pro
+PRODUCT_NAME = StudioBill Pro
 
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = com.gopalstudio.gopalStudioPro

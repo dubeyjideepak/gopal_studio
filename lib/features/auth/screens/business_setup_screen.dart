@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../services/local_db_service.dart';
 import '../../../shared/models/business_profile_model.dart';
@@ -59,9 +60,61 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
             padding: const EdgeInsets.all(24),
             children: [
               const SizedBox(height: 16),
-              const Center(child: Icon(Icons.camera_alt_rounded, color: AppColors.gold, size: 56)),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.gold, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withValues(alpha: 0.25),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/gopal_media_crest.jpg',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.camera_alt_rounded,
+                        color: AppColors.gold,
+                        size: 40,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
-              const Center(child: Text('Studio Profile Setup', style: TextStyle(fontFamily: 'PlayfairDisplay', color: AppColors.gold, fontSize: 24, fontWeight: FontWeight.bold))),
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Gopal',
+                      style: GoogleFonts.greatVibes(
+                        color: AppColors.gold,
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'STUDIO SETUP',
+                      style: GoogleFonts.inter(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 4),
               const Center(child: Text('Configure your photography studio header', style: TextStyle(color: AppColors.textMuted))),
               const SizedBox(height: 32),

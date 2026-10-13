@@ -15,7 +15,6 @@ dependencies:
   firebase_auth: ^5.3.3
   cloud_firestore: ^5.5.0
   firebase_storage: ^12.3.6
-  firebase_remote_config: ^5.1.4
 
   # State Management
   flutter_riverpod: ^2.6.1
@@ -32,12 +31,10 @@ dependencies:
 
   # QR Code
   qr_flutter: ^4.1.0
-  qr_code_scanner_plus: ^2.0.5
 
   # Image
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1
-  flutter_image_compress: ^2.3.0
 
   # Navigation
   go_router: ^14.6.2
@@ -59,9 +56,6 @@ dependencies:
   # WhatsApp & Share
   url_launcher: ^6.3.1
   share_plus: ^10.1.2
-
-  # Notifications
-  flutter_local_notifications: ^18.0.1
 
   # Utils
   uuid: ^4.5.1
@@ -93,15 +87,12 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-    - assets/icons/
     - assets/fonts/
-    - assets/lottie/
 
   fonts:
-    - family: PlayfairDisplay
+    - family: GreatVibes
       fonts:
-        - asset: assets/fonts/PlayfairDisplay-Regular.ttf
-        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/PlayfairDisplay-Italic.ttf
-          style: italic
+        - asset: assets/fonts/GreatVibes-Regular.ttf
+    - family: Cinzel
+      fonts:
+        - asset: assets/fonts/Cinzel.ttf

@@ -252,4 +252,17 @@ class AppTheme {
       ),
     );
   }
+
+  static TextStyle scriptTitle({
+    double fontSize = 32,
+    Color color = AppColors.gold,
+    FontWeight fontWeight = FontWeight.bold,
+  }) {
+    return GoogleFonts.greatVibes(
+      fontSize: fontSize,
+      color: color,
+      fontWeight: fontWeight,
+      letterSpacing: 1.2,
+    );
+  }
 }
