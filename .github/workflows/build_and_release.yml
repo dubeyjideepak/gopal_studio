@@ -16,7 +16,7 @@ jobs:
     name: Build Windows Desktop (.exe Installer & Portable Zip)
     runs-on: windows-latest
     env:
-      _CL_: "/D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
+      CL: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
 
     steps:
       - name: Checkout Code
@@ -68,9 +68,30 @@ jobs:
                 Set-Content -Path $path -Value $text -Encoding UTF8
               }
             }
+
+            # 2. Patch printing plugin (keyword collision on 'default' in C++20)
+            Get-ChildItem -Path $pubCache -Recurse -Filter "print_job.h" -ErrorAction SilentlyContinue | ForEach-Object {
+              $pjText = Get-Content -Raw -Path $_.FullName
+              if ($pjText -match 'const bool default;') {
+                $pjText = $pjText.Replace('const bool default;', 'const bool isDefault;')
+                $pjText = $pjText.Replace('bool default,', 'bool isDefault,')
+                $pjText = $pjText.Replace('default(default),', 'isDefault(isDefault),')
+                Set-Content -Path $_.FullName -Value $pjText -Encoding UTF8
+                Write-Host "Patched print_job.h in $($_.FullName)"
+              }
+            }
+
+            Get-ChildItem -Path $pubCache -Recurse -Filter "printing_plugin.cpp" -ErrorAction SilentlyContinue | ForEach-Object {
+              $ppText = Get-Content -Raw -Path $_.FullName
+              if ($ppText -match 'printer\.default') {
+                $ppText = $ppText.Replace('printer.default', 'printer.isDefault')
+                Set-Content -Path $_.FullName -Value $ppText -Encoding UTF8
+                Write-Host "Patched printing_plugin.cpp in $($_.FullName)"
+              }
+            }
           }
 
-          # 2. Pre-download, pre-extract and patch firebase_cpp_sdk_windows before CMake runs
+          # 3. Pre-download, pre-extract and patch firebase_cpp_sdk_windows before CMake runs
           $extractDir = "$PWD\build\windows\x64\extracted"
           New-Item -ItemType Directory -Force -Path $extractDir
           $zipPath = "$PWD\build\windows\x64\firebase_cpp_sdk_windows_12.7.0.zip"
@@ -89,7 +110,7 @@ jobs:
             Write-Host "Successfully patched $sdkCmake with VERSION 3.5 and coroutine flags!"
           }
 
-          # 3. Patch any headers in extracted SDK that include experimental/coroutine
+          # 4. Patch any headers in extracted SDK that include experimental/coroutine
           Get-ChildItem -Path "$extractDir\firebase_cpp_sdk_windows" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue | ForEach-Object {
             $hText = Get-Content -Raw -Path $_.FullName
             if ($hText -match 'experimental/coroutine') {
@@ -103,7 +124,7 @@ jobs:
         env:
           FIREBASE_CPP_SDK_DIR: ${{ github.workspace }}\build\windows\x64\extracted\firebase_cpp_sdk_windows
           CMAKE_CXX_FLAGS: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
-          _CL_: "/D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
+          CL: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
         run: flutter build windows --release
 
       - name: Install Inno Setup
