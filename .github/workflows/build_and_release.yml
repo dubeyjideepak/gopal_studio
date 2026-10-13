@@ -16,7 +16,7 @@ jobs:
     name: Build Windows Desktop (.exe Installer & Portable Zip)
     runs-on: windows-latest
     env:
-      CL: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
+      CL: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX23_DEPRECATION_WARNINGS"
 
     steps:
       - name: Checkout Code
@@ -34,7 +34,7 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Patch Firebase CMakeLists for Windows
+      - name: Patch Native Plugins and Firebase for Windows
         shell: pwsh
         run: |
           # 1. Scan Pub Cache and patch any CMakeLists with old minimum or inject Firebase SDK patch
@@ -69,7 +69,7 @@ jobs:
               }
             }
 
-            # 2. Patch printing plugin (keyword collision on 'default' in C++20)
+            # 2. Patch printing plugin (keyword collision on 'default')
             Get-ChildItem -Path $pubCache -Recurse -Filter "print_job.h" -ErrorAction SilentlyContinue | ForEach-Object {
               $pjText = Get-Content -Raw -Path $_.FullName
               if ($pjText -match 'const bool default;') {
@@ -89,9 +89,40 @@ jobs:
                 Write-Host "Patched printing_plugin.cpp in $($_.FullName)"
               }
             }
+
+            # 3. Patch share_plus plugin (C4596 illegal qualified name)
+            Get-ChildItem -Path $pubCache -Recurse -Filter "share_plus_windows_plugin.h" -ErrorAction SilentlyContinue | ForEach-Object {
+              $spText = Get-Content -Raw -Path $_.FullName
+              if ($spText -match 'SharePlusWindowsPlugin::Utf16FromUtf8') {
+                $spText = $spText.Replace('static std::wstring SharePlusWindowsPlugin::Utf16FromUtf8', 'static std::wstring Utf16FromUtf8')
+                Set-Content -Path $_.FullName -Value $spText -Encoding UTF8
+                Write-Host "Patched share_plus_windows_plugin.h in $($_.FullName)"
+              }
+            }
+
+            # 4. Patch vector.h in share_plus (dependent template base names)
+            Get-ChildItem -Path $pubCache -Recurse -Filter "vector.h" -ErrorAction SilentlyContinue | ForEach-Object {
+              $vText = Get-Content -Raw -Path $_.FullName
+              if ($vText -match 'typedef std::vector<ElementType> InternalVectorType;') {
+                $vText = $vText.Replace('struct DefaultVectorTraits : public ElementTraits<T> {', "struct DefaultVectorTraits : public ElementTraits<T> {`n  using ElementType = typename ElementTraits<T>::ElementType;`n  using ElementTraits<T>::Wrap;`n  using ElementTraits<T>::CopyTo;")
+                $vText = $vText.Replace('typename RuntimeClass::IVector::T_complex', 'typename ABI::Windows::Foundation::Collections::IVector<T>::T_complex')
+                Set-Content -Path $_.FullName -Value $vText -Encoding UTF8
+                Write-Host "Patched vector.h in $($_.FullName)"
+              }
+            }
+
+            # 5. Inject coroutine suppression across any headers/cpp in Pub Cache
+            Get-ChildItem -Path $pubCache -Recurse -Include "*.h","*.cpp" -ErrorAction SilentlyContinue | ForEach-Object {
+              $fText = Get-Content -Raw -Path $_.FullName
+              if ($fText -match 'experimental/coroutine' -and $fText -notmatch '_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS') {
+                $fText = "#ifndef _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`n#define _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS 1`n#endif`n#ifndef _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING`n#define _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING 1`n#endif`n" + $fText
+                Set-Content -Path $_.FullName -Value $fText -Encoding UTF8
+                Write-Host "Injected coroutine suppression into: $($_.FullName)"
+              }
+            }
           }
 
-          # 3. Pre-download, pre-extract and patch firebase_cpp_sdk_windows before CMake runs
+          # 6. Pre-download, pre-extract and patch firebase_cpp_sdk_windows before CMake runs
           $extractDir = "$PWD\build\windows\x64\extracted"
           New-Item -ItemType Directory -Force -Path $extractDir
           $zipPath = "$PWD\build\windows\x64\firebase_cpp_sdk_windows_12.7.0.zip"
@@ -104,17 +135,17 @@ jobs:
           if (Test-Path $sdkCmake) {
             $content = Get-Content -Raw -Path $sdkCmake
             $content = $content -replace 'cmake_minimum_required\s*\([^)]*\)', 'cmake_minimum_required(VERSION 3.5)'
-            $extraFlags = [System.Environment]::NewLine + 'add_compile_options(/await)' + [System.Environment]::NewLine + 'add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS)' + [System.Environment]::NewLine
+            $extraFlags = [System.Environment]::NewLine + 'add_compile_options(/await)' + [System.Environment]::NewLine + 'add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS)' + [System.Environment]::NewLine
             $content = $content + $extraFlags
             Set-Content -Path $sdkCmake -Value $content -Encoding UTF8
             Write-Host "Successfully patched $sdkCmake with VERSION 3.5 and coroutine flags!"
           }
 
-          # 4. Patch any headers in extracted SDK that include experimental/coroutine
+          # 7. Patch any headers in extracted SDK that include experimental/coroutine
           Get-ChildItem -Path "$extractDir\firebase_cpp_sdk_windows" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue | ForEach-Object {
             $hText = Get-Content -Raw -Path $_.FullName
             if ($hText -match 'experimental/coroutine') {
-              $hText = "#ifndef _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING`n#define _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING 1`n#endif`n" + $hText
+              $hText = "#ifndef _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`n#define _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS 1`n#endif`n#ifndef _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING`n#define _SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING 1`n#endif`n" + $hText
               Set-Content -Path $_.FullName -Value $hText -Encoding UTF8
               Write-Host "Injected coroutine suppression into header: $($_.FullName)"
             }
@@ -123,8 +154,8 @@ jobs:
       - name: Build Windows Release
         env:
           FIREBASE_CPP_SDK_DIR: ${{ github.workspace }}\build\windows\x64\extracted\firebase_cpp_sdk_windows
-          CMAKE_CXX_FLAGS: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
-          CL: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
+          CMAKE_CXX_FLAGS: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX23_DEPRECATION_WARNINGS"
+          CL: "/await /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS /D_SILENCE_EXPERIMENTAL_COROUTINE_SUPPORT_DEPRECATION_WARNING /D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS /D_SILENCE_ALL_CXX23_DEPRECATION_WARNINGS"
         run: flutter build windows --release
 
       - name: Install Inno Setup
