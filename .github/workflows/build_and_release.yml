@@ -201,6 +201,16 @@ jobs:
           files: |
             build/windows/installer/StudioBillPro_v1.0.0_Setup.exe
             build/windows/installer/StudioBillPro-Windows-Portable.zip
+          name: StudioBill Pro ${{ github.ref_name }}
+          body: |
+            ### StudioBill Pro - Release ${{ github.ref_name }}
+
+            #### 💻 Windows Installation:
+            - **Setup Installer (Recommended):** Download **`StudioBillPro_v1.0.0_Setup.exe`**. Run it to launch the standard Windows Setup Wizard. It installs into `Program Files`, creates a Desktop shortcut, and adds StudioBill Pro to your Windows Start Menu and Control Panel.
+            - **Portable Version (No installation needed):** Download **`StudioBillPro-Windows-Portable.zip`**, extract anywhere, and double-click `StudioBillPro.exe`.
+
+            #### 📱 Android:
+            - Download **`app-release.apk`** to install StudioBill Pro on Android devices.
           draft: false
           prerelease: false
         env:
