@@ -157,19 +157,57 @@ class WhatsAppService {
           await Process.run('open', ['-R', file.path]);
         } catch (_) {}
 
-        // 2. Open WhatsApp chat directly
+        // 2. Put file onto macOS clipboard via AppleScript
+        try {
+          await Process.run('osascript', [
+            '-e',
+            'tell application "Finder" to set the clipboard to (POSIX file "${file.path}")'
+          ]);
+        } catch (_) {}
+
+        // 3. Format full digital bill text message
+        final billDate = DateFormat('dd MMM yyyy').format(bill.createdAt);
+        final itemsList = bill.items.map((item) =>
+          '  • ${item.particulars}${item.size != null ? ' (${item.size})' : ''} × ${item.quantity.toStringAsFixed(0)} = ${_currencyFormat.format(item.amount)}'
+        ).join('\n');
+        String statusNote = '';
+        if (!bill.isFullyPaid) {
+          statusNote = '\n⚠️ *Balance Due:* ${_currencyFormat.format(bill.remainingBalance)}';
+        } else {
+          statusNote = '\n✅ *FULLY PAID — Thank You!*';
+        }
+        final message = '''
+🎞️ *${business.businessName}*
+${business.address ?? ''}
+📞 ${business.phone1}${business.phone2 != null ? ' | ${business.phone2}' : ''}
+━━━━━━━━━━━━━━━━━━━━
+📋 *BILL RECEIPT #${bill.billNumber}*
+📅 Date: $billDate
+👤 Customer: ${bill.customerName}
+━━━━━━━━━━━━━━━━━━━━
+*Items:*
+$itemsList
+━━━━━━━━━━━━━━━━━━━━
+💰 *Total:* ${_currencyFormat.format(bill.totalAmount)}
+${bill.advanceAmount > 0 ? '💵 *Advance:* ${_currencyFormat.format(bill.advanceAmount)}\n' : ''}⚖️ *Balance:* ${_currencyFormat.format(bill.balanceAmount)}$statusNote
+━━━━━━━━━━━━━━━━━━━━
+${business.upiId != null ? '📱 Pay via UPI: ${business.upiId}' : ''}
+
+_${business.tagline ?? 'Thank you for your business!'}_\n(Official PDF attached)
+'''.trim();
+        final encoded = Uri.encodeComponent(message);
+
+        // 4. Open WhatsApp chat directly with text pre-filled
         if (bill.customerMobile != null && bill.customerMobile!.isNotEmpty) {
           final cleaned = bill.customerMobile!.replaceAll(RegExp(r'[^0-9]'), '');
           final phone = cleaned.startsWith('91') ? cleaned : '91$cleaned';
-          final waUrl = Uri.parse('whatsapp://send?phone=$phone');
+          final waUrl = Uri.parse('whatsapp://send?phone=$phone&text=$encoded');
+          final webUrl = Uri.parse('https://web.whatsapp.com/send?phone=$phone&text=$encoded');
           try {
             if (await canLaunchUrl(waUrl)) {
               await launchUrl(waUrl);
-            } else {
-              final webUrl = Uri.parse('https://wa.me/$phone');
-              if (await canLaunchUrl(webUrl)) {
-                await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-              }
+            } else if (await canLaunchUrl(webUrl)) {
+              await launchUrl(webUrl, mode: LaunchMode.externalApplication);
             }
           } catch (_) {}
         } else {
@@ -182,40 +220,75 @@ class WhatsAppService {
           }
         }
 
-        // 3. Trigger macOS native share sheet for direct PDF file sharing
+        // 5. Trigger macOS native share sheet for direct PDF file sharing (AirDrop, WhatsApp, Mail, etc.)
         try {
           await Printing.sharePdf(bytes: pdfBytes, filename: fileName);
         } catch (_) {}
 
         if (context.mounted) {
           final displayFileName = file.path.split(RegExp(r'[/\\]')).last;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: const Color(0xFF0E233E),
-              behavior: SnackBarBehavior.floating,
-              content: Row(
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: AppColors.gold, width: 1),
+              ),
+              title: const Row(
                 children: [
-                  const Icon(Icons.picture_as_pdf_rounded, color: AppColors.gold, size: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28),
+                  SizedBox(width: 10),
+                  Text('PDF Ready for WhatsApp!', style: TextStyle(color: AppColors.gold, fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '1. Customer WhatsApp chat is opening with bill details pre-typed.',
+                    style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '2. PDF file "$displayFileName" is highlighted in Finder right now.',
+                    style: const TextStyle(color: AppColors.gold, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                    ),
+                    child: const Row(
                       children: [
-                        const Text(
-                          'PDF Bill Ready for WhatsApp!',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        Text(
-                          'PDF saved to Downloads/$displayFileName and revealed in Finder to drop into chat.',
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                        Icon(Icons.touch_app_rounded, color: AppColors.gold, size: 24),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Drag the highlighted PDF from Finder directly into the WhatsApp chat window!',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Tip: In WhatsApp for Mac, dragging files directly into the chat or clicking the (+) attach button is the standard way to send documents.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                  ),
                 ],
               ),
-              duration: const Duration(seconds: 4),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK, Got it!', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
           );
         }
