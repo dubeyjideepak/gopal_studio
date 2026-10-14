@@ -28,6 +28,7 @@ class PdfService {
   static const _redDue = PdfColor.fromInt(0xFFC02727);        // Balance due red
   static const _ytRed = PdfColor.fromInt(0xFFFF0000);         // YouTube Red
   static const _waGreen = PdfColor.fromInt(0xFF25D366);       // WhatsApp Green
+  static const _instaPink = PdfColor.fromInt(0xFFE1306C);     // Instagram Magenta
 
   Future<Uint8List> generateBillPdf(Bill bill, BusinessProfile profile) async {
     final doc = pw.Document();
@@ -66,6 +67,12 @@ class PdfService {
     try {
       final ytData = await rootBundle.load('assets/images/youtube_logo.png');
       ytImage = pw.MemoryImage(ytData.buffer.asUint8List());
+    } catch (_) {}
+
+    pw.MemoryImage? instaImage;
+    try {
+      final instaData = await rootBundle.load('assets/images/instagram_logo.png');
+      instaImage = pw.MemoryImage(instaData.buffer.asUint8List());
     } catch (_) {}
 
     // Fallbacks if bundle loading has edge case
@@ -107,7 +114,7 @@ class PdfService {
                 pw.SizedBox(height: 10),
 
                 // Master Header: Pure Vector Brand Identity with 3D Media Crest & Clipped Social Icons
-                _buildMasterHeader(profile, bill, defaultScript, defaultSerif, crestImage, waImage, ytImage),
+                _buildMasterHeader(profile, bill, defaultScript, defaultSerif, crestImage, waImage, ytImage, instaImage),
                 pw.SizedBox(height: 12),
 
                 // Client & Invoice Metadata Cards
@@ -143,6 +150,7 @@ class PdfService {
     pw.MemoryImage? crestImage,
     pw.MemoryImage? waImage,
     pw.MemoryImage? ytImage,
+    pw.MemoryImage? instaImage,
   ) {
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -240,11 +248,15 @@ class PdfService {
               'Tel: +91 ${profile.phone1}${profile.phone2 != null ? " / ${profile.phone2}" : ""}',
               style: const pw.TextStyle(color: _textDark, fontSize: 8.5),
             ),
-            // Social badges: WhatsApp placed ABOVE YouTube, followed by follow text with channel name
+            // Social badges: WhatsApp, YouTube, and Instagram
             pw.SizedBox(height: 4),
             _buildWaPill(profile.phone2 ?? profile.phone1, waImage),
             pw.SizedBox(height: 3),
             _buildYtPill(profile.youtubeChannel ?? '@GopalPhotographyStudio', ytImage),
+            if (profile.instagramHandle != null && profile.instagramHandle!.isNotEmpty) ...[
+              pw.SizedBox(height: 3),
+              _buildInstaPill(profile.instagramHandle!, instaImage),
+            ],
           ],
         ),
       ],
@@ -879,6 +891,75 @@ class PdfService {
               color: _ytRed,
               fontSize: 7.5,
               fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildInstaPill(String handle, pw.MemoryImage? instaImage) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: pw.BoxDecoration(
+        color: PdfColor.fromHex('#FDF0F5'),
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(color: PdfColor.fromHex('#F8BBD0'), width: 0.6),
+      ),
+      child: pw.Row(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          if (instaImage != null)
+            pw.ClipRRect(
+              horizontalRadius: 3,
+              verticalRadius: 3,
+              child: pw.Image(instaImage, width: 11, height: 11),
+            )
+          else
+            _buildVectorInstaIcon(),
+          pw.SizedBox(width: 4),
+          pw.Text(
+            'Instagram: $handle',
+            style: const pw.TextStyle(
+              color: _instaPink,
+              fontSize: 7.5,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildVectorInstaIcon() {
+    return pw.Container(
+      width: 11,
+      height: 11,
+      decoration: pw.BoxDecoration(
+        borderRadius: pw.BorderRadius.circular(3),
+        border: pw.Border.all(color: _instaPink, width: 1.0),
+      ),
+      child: pw.Stack(
+        alignment: pw.Alignment.center,
+        children: [
+          pw.Container(
+            width: 5,
+            height: 5,
+            decoration: pw.BoxDecoration(
+              shape: pw.BoxShape.circle,
+              border: pw.Border.all(color: _instaPink, width: 0.8),
+            ),
+          ),
+          pw.Positioned(
+            top: 1,
+            right: 1.2,
+            child: pw.Container(
+              width: 1.2,
+              height: 1.2,
+              decoration: const pw.BoxDecoration(
+                color: _instaPink,
+                shape: pw.BoxShape.circle,
+              ),
             ),
           ),
         ],

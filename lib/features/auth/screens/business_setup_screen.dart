@@ -38,6 +38,8 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
         phone1: _phone1Ctrl.text.trim(),
         phone2: _phone2Ctrl.text.trim().isEmpty ? null : _phone2Ctrl.text.trim(),
         upiId: _upiCtrl.text.trim().isEmpty ? null : _upiCtrl.text.trim(),
+        youtubeChannel: '@GopalPhotographyStudio',
+        instagramHandle: '@gopal_photography_studio',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

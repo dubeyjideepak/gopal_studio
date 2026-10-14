@@ -33,6 +33,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _upiCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _youtubeCtrl = TextEditingController();
+  final _instagramCtrl = TextEditingController();
 
   final String _appVersion = '1.0.0+1';
 
@@ -53,6 +54,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _upiCtrl.text = profile.upiId ?? '';
     _emailCtrl.text = profile.email ?? '';
     _youtubeCtrl.text = profile.youtubeChannel ?? '@GopalPhotographyStudio';
+    _instagramCtrl.text = profile.instagramHandle ?? '@gopal_photography_studio';
     if (mounted) {
       setState(() {
         _profile = profile;
@@ -75,6 +77,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         upiId: _upiCtrl.text.trim().isEmpty ? null : _upiCtrl.text.trim(),
         email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
         youtubeChannel: _youtubeCtrl.text.trim().isEmpty ? null : _youtubeCtrl.text.trim(),
+        instagramHandle: _instagramCtrl.text.trim().isEmpty ? null : _instagramCtrl.text.trim(),
         updatedAt: DateTime.now(),
       );
       await LocalDbService.instance.saveBusinessProfile(updated);
@@ -82,7 +85,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Studio profile & YouTube channel saved successfully!'),
+            content: Text('Studio profile & social links saved successfully!'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -107,6 +110,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _upiCtrl.dispose();
     _emailCtrl.dispose();
     _youtubeCtrl.dispose();
+    _instagramCtrl.dispose();
     super.dispose();
   }
 
@@ -202,6 +206,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             controller: _youtubeCtrl,
             labelText: 'YouTube Channel Handle / URL (e.g. @GopalPhotographyStudio)',
             prefixIcon: Icons.play_circle_fill_rounded,
+            textCapitalization: TextCapitalization.none,
+          ),
+          const SizedBox(height: 12),
+          GoldTextField(
+            controller: _instagramCtrl,
+            labelText: 'Instagram ID / Handle (e.g. @gopal_photography_studio)',
+            prefixIcon: Icons.camera_alt_rounded,
             textCapitalization: TextCapitalization.none,
           ),
 

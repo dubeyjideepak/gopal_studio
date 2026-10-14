@@ -204,7 +204,7 @@ class _BillDetailContentState extends ConsumerState<_BillDetailContent> {
                               ],
                             ),
                           ),
-                          Expanded(child: Text('${item.quantity.toStringAsFixed(0)}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center)),
+                          Expanded(child: Text(item.quantity.toStringAsFixed(0), style: const TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center)),
                           Expanded(child: Text('\u20b9${item.rate.toStringAsFixed(0)}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center)),
                           Expanded(child: Text('\u20b9${item.amount.toStringAsFixed(0)}', style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13), textAlign: TextAlign.right)),
                         ],

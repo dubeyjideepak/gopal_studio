@@ -14,6 +14,7 @@ class BusinessProfile extends Equatable {
   final String? logoPath;
   final String? gstin;
   final String? youtubeChannel;
+  final String? instagramHandle;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -31,6 +32,7 @@ class BusinessProfile extends Equatable {
     this.logoPath,
     this.gstin,
     this.youtubeChannel,
+    this.instagramHandle,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -49,6 +51,7 @@ class BusinessProfile extends Equatable {
     String? logoPath,
     String? gstin,
     String? youtubeChannel,
+    String? instagramHandle,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -66,6 +69,7 @@ class BusinessProfile extends Equatable {
       logoPath: logoPath ?? this.logoPath,
       gstin: gstin ?? this.gstin,
       youtubeChannel: youtubeChannel ?? this.youtubeChannel,
+      instagramHandle: instagramHandle ?? this.instagramHandle,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -85,6 +89,7 @@ class BusinessProfile extends Equatable {
     'logoPath': logoPath,
     'gstin': gstin,
     'youtubeChannel': youtubeChannel,
+    'instagramHandle': instagramHandle,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -103,6 +108,7 @@ class BusinessProfile extends Equatable {
     logoPath: json['logoPath'] as String?,
     gstin: json['gstin'] as String?,
     youtubeChannel: json['youtubeChannel'] as String?,
+    instagramHandle: json['instagramHandle'] as String?,
     createdAt: DateTime.parse(json['createdAt'] as String),
     updatedAt: DateTime.parse(json['updatedAt'] as String),
   );
@@ -116,10 +122,11 @@ class BusinessProfile extends Equatable {
     phone1: '9935006921',
     phone2: '8115989543',
     youtubeChannel: '@GopalPhotographyStudio',
+    instagramHandle: '@gopal_photography_studio',
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
   );
 
   @override
-  List<Object?> get props => [id, businessName, phone1, youtubeChannel];
+  List<Object?> get props => [id, businessName, phone1, youtubeChannel, instagramHandle];
 }

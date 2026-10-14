@@ -53,9 +53,11 @@ class CustomerDetailScreen extends ConsumerWidget {
                       final bills = await LocalDbService.instance.getBillsByCustomer(customerId);
                       final pendingBills = bills.where((b) => b.status != BillStatus.paid).toList();
                       if (pendingBills.isEmpty || customer.mobile == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('No pending bill or mobile number missing')),
-                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('No pending bill or mobile number missing')),
+                          );
+                        }
                         return;
                       }
                       final profile = await LocalDbService.instance.getBusinessProfile();
