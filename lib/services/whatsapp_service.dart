@@ -165,36 +165,8 @@ class WhatsAppService {
           ]);
         } catch (_) {}
 
-        // 3. Format full digital bill text message
-        final billDate = DateFormat('dd MMM yyyy').format(bill.createdAt);
-        final itemsList = bill.items.map((item) =>
-          '  • ${item.particulars}${item.size != null ? ' (${item.size})' : ''} × ${item.quantity.toStringAsFixed(0)} = ${_currencyFormat.format(item.amount)}'
-        ).join('\n');
-        String statusNote = '';
-        if (!bill.isFullyPaid) {
-          statusNote = '\n⚠️ *Balance Due:* ${_currencyFormat.format(bill.remainingBalance)}';
-        } else {
-          statusNote = '\n✅ *FULLY PAID — Thank You!*';
-        }
-        final message = '''
-🎞️ *${business.businessName}*
-${business.address ?? ''}
-📞 ${business.phone1}${business.phone2 != null ? ' | ${business.phone2}' : ''}
-━━━━━━━━━━━━━━━━━━━━
-📋 *BILL RECEIPT #${bill.billNumber}*
-📅 Date: $billDate
-👤 Customer: ${bill.customerName}
-━━━━━━━━━━━━━━━━━━━━
-*Items:*
-$itemsList
-━━━━━━━━━━━━━━━━━━━━
-💰 *Total:* ${_currencyFormat.format(bill.totalAmount)}
-${bill.advanceAmount > 0 ? '💵 *Advance:* ${_currencyFormat.format(bill.advanceAmount)}\n' : ''}⚖️ *Balance:* ${_currencyFormat.format(bill.balanceAmount)}$statusNote
-━━━━━━━━━━━━━━━━━━━━
-${business.upiId != null ? '📱 Pay via UPI: ${business.upiId}' : ''}
-
-_${business.tagline ?? 'Thank you for your business!'}_\n(Official PDF attached)
-'''.trim();
+        // 3. Short hint caption about the attached PDF bill
+        final message = '🙏 Namaste ${bill.customerName} Ji! Please find your bill receipt #${bill.billNumber} from ${business.businessName} attached below.';
         final encoded = Uri.encodeComponent(message);
 
         // 4. Open WhatsApp chat directly with text pre-filled
@@ -310,36 +282,8 @@ _${business.tagline ?? 'Thank you for your business!'}_\n(Official PDF attached)
           ]);
         } catch (_) {}
 
-        // 3. Format full digital invoice message
-        final billDate = DateFormat('dd MMM yyyy').format(bill.createdAt);
-        final itemsList = bill.items.map((item) =>
-          '  • ${item.particulars}${item.size != null ? ' (${item.size})' : ''} × ${item.quantity.toStringAsFixed(0)} = ${_currencyFormat.format(item.amount)}'
-        ).join('\n');
-        String statusNote = '';
-        if (!bill.isFullyPaid) {
-          statusNote = '\n⚠️ *Balance Due:* ${_currencyFormat.format(bill.remainingBalance)}';
-        } else {
-          statusNote = '\n✅ *FULLY PAID — Thank You!*';
-        }
-        final message = '''
-🎞️ *${business.businessName}*
-${business.address ?? ''}
-📞 ${business.phone1}${business.phone2 != null ? ' | ${business.phone2}' : ''}
-━━━━━━━━━━━━━━━━━━━━
-📋 *BILL RECEIPT #${bill.billNumber}*
-📅 Date: $billDate
-👤 Customer: ${bill.customerName}
-━━━━━━━━━━━━━━━━━━━━
-*Items:*
-$itemsList
-━━━━━━━━━━━━━━━━━━━━
-💰 *Total:* ${_currencyFormat.format(bill.totalAmount)}
-${bill.advanceAmount > 0 ? '💵 *Advance:* ${_currencyFormat.format(bill.advanceAmount)}\n' : ''}⚖️ *Balance:* ${_currencyFormat.format(bill.balanceAmount)}$statusNote
-━━━━━━━━━━━━━━━━━━━━
-${business.upiId != null ? '📱 Pay via UPI: ${business.upiId}' : ''}
-
-_${business.tagline ?? 'Thank you for your business!'}_\n(Official PDF attached)
-'''.trim();
+        // 3. Short hint caption about the attached PDF bill
+        final message = '🙏 Namaste ${bill.customerName} Ji! Please find your bill receipt #${bill.billNumber} from ${business.businessName} attached below.';
         final encoded = Uri.encodeComponent(message);
 
         // 4. Open WhatsApp chat directly with message pre-typed
