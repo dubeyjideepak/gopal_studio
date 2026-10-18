@@ -75,6 +75,12 @@ class PdfService {
       instaImage = pw.MemoryImage(instaData.buffer.asUint8List());
     } catch (_) {}
 
+    pw.MemoryImage? studioLogoImage;
+    try {
+      final logoData = await rootBundle.load('assets/images/gopal_studio_logo.png');
+      studioLogoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+    } catch (_) {}
+
     // Fallbacks if bundle loading has edge case
     final defaultScript = scriptFont ?? pw.Font.helveticaBold();
     final defaultSerif = serifFont ?? pw.Font.timesBold();
@@ -114,7 +120,7 @@ class PdfService {
                 pw.SizedBox(height: 10),
 
                 // Master Header: Pure Vector Brand Identity with 3D Media Crest & Clipped Social Icons
-                _buildMasterHeader(profile, bill, defaultScript, defaultSerif, crestImage, waImage, ytImage, instaImage),
+                _buildMasterHeader(profile, bill, defaultScript, defaultSerif, crestImage, studioLogoImage, waImage, ytImage, instaImage),
                 pw.SizedBox(height: 12),
 
                 // Client & Invoice Metadata Cards
@@ -148,6 +154,7 @@ class PdfService {
     pw.Font scriptFont,
     pw.Font serifFont,
     pw.MemoryImage? crestImage,
+    pw.MemoryImage? studioLogoImage,
     pw.MemoryImage? waImage,
     pw.MemoryImage? ytImage,
     pw.MemoryImage? instaImage,
@@ -155,61 +162,96 @@ class PdfService {
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // Official 3D Gopal Media Crest Emblem
-        _buildCrestBadge(crestImage),
-        pw.SizedBox(width: 14),
-
-        // Studio Vector Typography
+        // Left Block: Official Studio Logo or Vector Typography
         pw.Expanded(
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Script Calligraphy "Gopal" (Rendered via TrueType Vector Font)
-              pw.Text(
-                'Gopal',
-                style: pw.TextStyle(
-                  font: scriptFont,
-                  fontSize: 38,
-                  color: _goldAccent,
+          child: studioLogoImage != null
+              ? pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Image(
+                      studioLogoImage,
+                      height: 52,
+                      fit: pw.BoxFit.contain,
+                    ),
+                    pw.SizedBox(height: 3),
+                    pw.Text(
+                      '4K VIDEO MIXING & DIGITAL LAB',
+                      style: pw.TextStyle(
+                        font: serifFont,
+                        fontSize: 8.5,
+                        fontWeight: pw.FontWeight.bold,
+                        color: _goldAccent,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      profile.tagline != null && profile.tagline!.isNotEmpty
+                          ? profile.tagline!
+                          : 'Capturing Memory, Creating Story',
+                      style: const pw.TextStyle(
+                        fontSize: 8,
+                        color: _textMuted,
+                        fontStyle: pw.FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                )
+              : pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _buildCrestBadge(crestImage),
+                    pw.SizedBox(width: 14),
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            profile.businessName,
+                            style: pw.TextStyle(
+                              font: scriptFont,
+                              fontSize: 38,
+                              color: _goldAccent,
+                            ),
+                          ),
+                          pw.SizedBox(height: -6),
+                          pw.Text(
+                            'PHOTOGRAPHY STUDIO',
+                            style: pw.TextStyle(
+                              font: serifFont,
+                              fontSize: 13,
+                              fontWeight: pw.FontWeight.bold,
+                              color: _navyDark,
+                              letterSpacing: 2.2,
+                            ),
+                          ),
+                          pw.SizedBox(height: 2),
+                          pw.Text(
+                            '4K VIDEO MIXING & DIGITAL LAB',
+                            style: pw.TextStyle(
+                              font: serifFont,
+                              fontSize: 8,
+                              fontWeight: pw.FontWeight.bold,
+                              color: _goldAccent,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          pw.SizedBox(height: 3),
+                          pw.Text(
+                            profile.tagline != null && profile.tagline!.isNotEmpty
+                                ? profile.tagline!
+                                : 'Capturing Memory, Creating Story',
+                            style: const pw.TextStyle(
+                              fontSize: 8.5,
+                              color: _textMuted,
+                              fontStyle: pw.FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              pw.SizedBox(height: -6),
-              // Luxury Serif Subtitle
-              pw.Text(
-                'PHOTOGRAPHY STUDIO',
-                style: pw.TextStyle(
-                  font: serifFont,
-                  fontSize: 13,
-                  fontWeight: pw.FontWeight.bold,
-                  color: _navyDark,
-                  letterSpacing: 2.2,
-                ),
-              ),
-              pw.SizedBox(height: 2),
-              // Lab & Mixing Tagline
-              pw.Text(
-                '4K VIDEO MIXING & DIGITAL LAB',
-                style: pw.TextStyle(
-                  font: serifFont,
-                  fontSize: 8,
-                  fontWeight: pw.FontWeight.bold,
-                  color: _goldAccent,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              pw.SizedBox(height: 3),
-              pw.Text(
-                profile.tagline != null && profile.tagline!.isNotEmpty
-                    ? profile.tagline!
-                    : 'Capturing Memory, Creating Story',
-                style: const pw.TextStyle(
-                  fontSize: 8.5,
-                  color: _textMuted,
-                  fontStyle: pw.FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
         ),
 
         // Right Block: Cash Memo Pill + Address + Direct Contacts
