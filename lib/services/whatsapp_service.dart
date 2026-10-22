@@ -451,7 +451,7 @@ class WhatsAppService {
       final cleaned = bill.customerMobile!.replaceAll(RegExp(r'[^0-9]'), '');
       final phone = cleaned.startsWith('91') ? cleaned : '91$cleaned';
       final text = Uri.encodeComponent(
-        '🙏 Namaste ${bill.customerName} Ji!\n\nPlease find your official Cash Memo #${bill.billNumber} attached above.\n\nTotal: ₹${bill.totalAmount.toStringAsFixed(0)}\n${bill.advanceAmount > 0 ? "Advance: ₹${bill.advanceAmount.toStringAsFixed(0)}\n" : ""}Balance: ₹${bill.remainingBalance.toStringAsFixed(0)}\n\nThank you for choosing ${business.businessName}!',
+        '🙏 Namaste ${bill.customerName} Ji!\n\nPlease find your official Cash Memo #${bill.billNumber} attached above.\n\nTotal: ₹${bill.totalAmount.toStringAsFixed(0)}\n${bill.advanceAmount > 0 ? "Advance Paid: ₹${bill.advanceAmount.toStringAsFixed(0)}\n" : ""}${bill.paidAmount > bill.advanceAmount ? "Total Paid: ₹${bill.paidAmount.toStringAsFixed(0)}\n" : ""}${bill.remainingBalance > 0 ? "Balance Due: ₹${bill.remainingBalance.toStringAsFixed(0)}" : "Status: FULLY PAID & SETTLED ✓"}\n\nThank you for choosing ${business.businessName}!',
       );
       final waUrl = Uri.parse('https://wa.me/$phone?text=$text');
       try {
@@ -550,8 +550,8 @@ ${business.address ?? ''}
 *Items:*
 $itemsList
 ━━━━━━━━━━━━━━━━━━━━
-💰 *Total:* ${_currencyFormat.format(bill.totalAmount)}
-${bill.advanceAmount > 0 ? '💵 *Advance:* ${_currencyFormat.format(bill.advanceAmount)}\n' : ''}⚖️ *Balance:* ${_currencyFormat.format(bill.balanceAmount)}$statusNote
+💰 *Total Order Amount:* ${_currencyFormat.format(bill.totalAmount)}
+${bill.advanceAmount > 0 ? '💵 *Advance Paid:* ${_currencyFormat.format(bill.advanceAmount)}\n' : ''}${bill.paidAmount > 0 ? '✅ *Total Paid:* ${_currencyFormat.format(bill.paidAmount)}\n' : ''}⚖️ *Balance Due:* ${_currencyFormat.format(bill.remainingBalance > 0 ? bill.remainingBalance : 0)}$statusNote
 ━━━━━━━━━━━━━━━━━━━━
 ${business.upiId != null ? '📱 Pay via UPI: ${business.upiId}' : ''}
 

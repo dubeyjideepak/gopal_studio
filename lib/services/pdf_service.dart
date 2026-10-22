@@ -29,6 +29,7 @@ class PdfService {
   static const _ytRed = PdfColor.fromInt(0xFFFF0000);         // YouTube Red
   static const _waGreen = PdfColor.fromInt(0xFF25D366);       // WhatsApp Green
   static const _instaPink = PdfColor.fromInt(0xFFE1306C);     // Instagram Magenta
+  static const _tableSubHeader = PdfColor.fromInt(0xFFF0ECE1); // Soft gold table subheader
 
   Future<Uint8List> generateBillPdf(Bill bill, BusinessProfile profile) async {
     final doc = pw.Document();
@@ -90,6 +91,32 @@ class PdfService {
         ? 'upi://pay?pa=${profile.upiId}&pn=${Uri.encodeComponent(profile.businessName)}&am=${bill.remainingBalance > 0 ? bill.remainingBalance : bill.totalAmount}&cu=INR'
         : 'https://wa.me/91${profile.phone1}';
 
+    // Build comprehensive payment transaction history with fallback for legacy/quick bills
+    final payments = <PaymentEntry>[...bill.paymentHistory];
+    if (payments.isEmpty && bill.paidAmount > 0) {
+      final adv = bill.advanceAmount > 0 ? bill.advanceAmount : bill.paidAmount;
+      payments.add(
+        PaymentEntry(
+          id: 'adv-init',
+          amount: adv,
+          type: PaymentType.cash,
+          date: bill.createdAt,
+          note: bill.advanceAmount > 0 ? 'Advance at Booking' : 'Payment Received',
+        ),
+      );
+      if (bill.paidAmount > adv) {
+        payments.add(
+          PaymentEntry(
+            id: 'settle-init',
+            amount: bill.paidAmount - adv,
+            type: PaymentType.cash,
+            date: bill.createdAt,
+            note: 'Subsequent Settlement',
+          ),
+        );
+      }
+    }
+
     doc.addPage(
       pw.Page(
         pageTheme: pw.PageTheme(
@@ -121,18 +148,24 @@ class PdfService {
 
                 // Master Header: Pure Vector Brand Identity with 3D Media Crest & Clipped Social Icons
                 _buildMasterHeader(profile, bill, defaultScript, defaultSerif, crestImage, studioLogoImage, waImage, ytImage, instaImage),
-                pw.SizedBox(height: 12),
+                pw.SizedBox(height: 10),
 
                 // Client & Invoice Metadata Cards
                 _buildClientAndMemoCards(bill, billDateStr, deliveryDateStr, defaultSerif),
-                pw.SizedBox(height: 12),
+                pw.SizedBox(height: 10),
 
                 // High-End Items Table
-                _buildLuxuryTable(bill),
-                pw.SizedBox(height: 12),
+                _buildLuxuryTable(bill, hasPayments: payments.isNotEmpty),
+                pw.SizedBox(height: 8),
 
-                // Financial Breakdown + Vector UPI QR + Amount in Words
-                _buildFinancialSection(bill, profile, upiPayload),
+                // Payment Receipts & Advance History Table
+                if (payments.isNotEmpty) ...[
+                  _buildPaymentHistorySection(payments, bill, defaultSerif),
+                  pw.SizedBox(height: 8),
+                ],
+
+                // Financial Breakdown + Vector UPI QR + Amount in Words + Ledger
+                _buildFinancialSection(bill, profile, upiPayload, payments),
                 pw.Spacer(),
 
                 // Guarantee, Terms & Signatures
@@ -530,7 +563,7 @@ class PdfService {
   }
 
   // ─── 4. Luxury Items Table ─────────────────────────────────────────────────
-  pw.Widget _buildLuxuryTable(Bill bill) {
+  pw.Widget _buildLuxuryTable(Bill bill, {bool hasPayments = false}) {
     return pw.Table(
       border: null,
       columnWidths: const {
@@ -565,7 +598,7 @@ class PdfService {
             children: [
               _td('${idx + 1}', align: pw.Alignment.center),
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
@@ -589,26 +622,185 @@ class PdfService {
         }),
         // Minimum empty rows to maintain balanced proportion
         ...List.generate(
-          (4 - bill.items.length).clamp(0, 4),
+          ((hasPayments ? 2 : 4) - bill.items.length).clamp(0, 4),
           (i) => pw.TableRow(
             decoration: const pw.BoxDecoration(
               border: pw.Border(bottom: pw.BorderSide(color: _cardBorder, width: 0.4)),
             ),
-            children: List.generate(5, (_) => pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 9), child: pw.Text(''))),
+            children: List.generate(5, (_) => pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 7), child: pw.Text(''))),
           ),
         ),
       ],
     );
   }
 
+  // ─── 4B. Payment Receipts & Transaction History Section ────────────────────
+  pw.Widget _buildPaymentHistorySection(
+    List<PaymentEntry> payments,
+    Bill bill,
+    pw.Font serifFont,
+  ) {
+    final timeFormat = DateFormat('dd MMM yyyy, hh:mm a');
+    final totalPaidStr = _currencyFormat.format(bill.paidAmount);
+
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        color: _goldLight,
+        borderRadius: pw.BorderRadius.circular(5),
+        border: pw.Border.all(color: _cardBorder, width: 0.8),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          // Header Bar
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+            decoration: const pw.BoxDecoration(
+              color: _navyHeader,
+              borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(4)),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'PAYMENT RECEIPTS & ADVANCE HISTORY',
+                  style: pw.TextStyle(
+                    font: serifFont,
+                    color: _goldAccent,
+                    fontSize: 8,
+                    fontWeight: pw.FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                pw.Text(
+                  'Total Paid: Rs. $totalPaidStr',
+                  style: const pw.TextStyle(
+                    color: PdfColors.white,
+                    fontSize: 8,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Column Headers
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+            decoration: const pw.BoxDecoration(
+              color: _tableSubHeader,
+              border: pw.Border(bottom: pw.BorderSide(color: _cardBorder, width: 0.5)),
+            ),
+            child: pw.Row(
+              children: [
+                pw.SizedBox(width: 32, child: pw.Text('REC #', style: const pw.TextStyle(color: _navyDark, fontSize: 7, fontWeight: pw.FontWeight.bold))),
+                pw.SizedBox(width: 120, child: pw.Text('DATE & TIME', style: const pw.TextStyle(color: _navyDark, fontSize: 7, fontWeight: pw.FontWeight.bold))),
+                pw.Expanded(child: pw.Text('PARTICULARS / PAYMENT NOTE', style: const pw.TextStyle(color: _navyDark, fontSize: 7, fontWeight: pw.FontWeight.bold))),
+                pw.SizedBox(width: 60, child: pw.Text('MODE', textAlign: pw.TextAlign.center, style: const pw.TextStyle(color: _navyDark, fontSize: 7, fontWeight: pw.FontWeight.bold))),
+                pw.SizedBox(width: 80, child: pw.Text('AMOUNT PAID (Rs.)', textAlign: pw.TextAlign.right, style: const pw.TextStyle(color: _navyDark, fontSize: 7, fontWeight: pw.FontWeight.bold))),
+              ],
+            ),
+          ),
+
+          // Payment Rows
+          ...payments.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final p = entry.value;
+            final isEven = idx % 2 == 0;
+            final modeStr = p.type.name.toUpperCase();
+            final isUpi = p.type == PaymentType.upi;
+
+            return pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: pw.BoxDecoration(
+                color: isEven ? PdfColors.white : _goldLight,
+                border: const pw.Border(bottom: pw.BorderSide(color: _cardBorder, width: 0.4)),
+              ),
+              child: pw.Row(
+                children: [
+                  pw.SizedBox(
+                    width: 32,
+                    child: pw.Text(
+                      '#0${idx + 1}',
+                      style: const pw.TextStyle(color: _textMuted, fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.SizedBox(
+                    width: 120,
+                    child: pw.Text(
+                      timeFormat.format(p.date),
+                      style: const pw.TextStyle(color: _navyDark, fontSize: 7.5),
+                    ),
+                  ),
+                  pw.Expanded(
+                    child: pw.Text(
+                      p.note != null && p.note!.isNotEmpty
+                          ? p.note!
+                          : (idx == 0 && bill.advanceAmount > 0 ? 'Initial Booking Advance' : 'Order Payment'),
+                      style: const pw.TextStyle(color: _textDark, fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.SizedBox(
+                    width: 60,
+                    child: pw.Center(
+                      child: pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: pw.BoxDecoration(
+                          color: isUpi ? PdfColor.fromHex('#E3F2FD') : PdfColor.fromHex('#E8F8EE'),
+                          borderRadius: pw.BorderRadius.circular(3),
+                          border: pw.Border.all(
+                            color: isUpi ? PdfColor.fromHex('#90CAF9') : PdfColor.fromHex('#A5D6A7'),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: pw.Text(
+                          modeStr,
+                          style: pw.TextStyle(
+                            color: isUpi ? PdfColor.fromHex('#1565C0') : _greenPaid,
+                            fontSize: 6.5,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(
+                    width: 80,
+                    child: pw.Text(
+                      'Rs. ${_currencyFormat.format(p.amount)}',
+                      textAlign: pw.TextAlign.right,
+                      style: const pw.TextStyle(color: _greenPaid, fontSize: 8, fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   // ─── 5. Financial Breakdown + Vector UPI QR + Amount in Words ──────────────
-  pw.Widget _buildFinancialSection(Bill bill, BusinessProfile profile, String upiPayload) {
+  pw.Widget _buildFinancialSection(
+    Bill bill,
+    BusinessProfile profile,
+    String upiPayload,
+    List<PaymentEntry> payments,
+  ) {
     final amountInWords = _numberToWords(bill.totalAmount.toInt());
+    final hasPending = bill.remainingBalance > 0;
+
+    // Advance amount calculation
+    final advanceVal = bill.advanceAmount > 0
+        ? bill.advanceAmount
+        : (payments.isNotEmpty ? payments.first.amount : 0.0);
+    final otherPaymentsVal = (bill.paidAmount - advanceVal).clamp(0.0, bill.totalAmount);
 
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // Left Column: Vector QR Code + Amount In Words
+        // Left Column: Vector QR Code + Amount In Words + Verification
         pw.Expanded(
           flex: 4,
           child: pw.Container(
@@ -621,21 +813,42 @@ class PdfService {
             child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                // High-contrast Vector Barcode QR Widget for 100% scan reliability
+                // High-contrast Vector Barcode QR Widget or Settled Seal
                 pw.Container(
                   padding: const pw.EdgeInsets.all(4),
                   decoration: pw.BoxDecoration(
                     color: PdfColors.white,
                     borderRadius: pw.BorderRadius.circular(4),
-                    border: pw.Border.all(color: _cardBorder, width: 0.8),
+                    border: pw.Border.all(
+                      color: hasPending ? _cardBorder : PdfColor.fromHex('#C8E6C9'),
+                      width: 0.8,
+                    ),
                   ),
-                  child: pw.BarcodeWidget(
-                    barcode: pw.Barcode.qrCode(),
-                    data: upiPayload,
-                    width: 58,
-                    height: 58,
-                    color: _navyDark,
-                  ),
+                  child: hasPending
+                      ? pw.BarcodeWidget(
+                          barcode: pw.Barcode.qrCode(),
+                          data: upiPayload,
+                          width: 58,
+                          height: 58,
+                          color: _navyDark,
+                        )
+                      : pw.Container(
+                          width: 58,
+                          height: 58,
+                          decoration: pw.BoxDecoration(
+                            color: PdfColor.fromHex('#E8F8EE'),
+                            borderRadius: pw.BorderRadius.circular(4),
+                          ),
+                          child: pw.Center(
+                            child: pw.Column(
+                              mainAxisAlignment: pw.MainAxisAlignment.center,
+                              children: [
+                                pw.Text('PAID', style: const pw.TextStyle(color: _greenPaid, fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                                pw.Text('SETTLED', style: const pw.TextStyle(color: _greenPaid, fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
                 ),
                 pw.SizedBox(width: 10),
 
@@ -645,7 +858,7 @@ class PdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        'AMOUNT IN WORDS',
+                        'TOTAL BILL AMOUNT IN WORDS',
                         style: const pw.TextStyle(
                           color: _goldAccent,
                           fontSize: 7.5,
@@ -656,18 +869,30 @@ class PdfService {
                       pw.SizedBox(height: 3),
                       pw.Text(
                         'Rupees $amountInWords Only',
-                        style: const pw.TextStyle(color: _textDark, fontSize: 9, fontWeight: pw.FontWeight.bold),
+                        style: const pw.TextStyle(color: _textDark, fontSize: 8.5, fontWeight: pw.FontWeight.bold),
                       ),
-                      pw.SizedBox(height: 5),
-                      pw.Text(
-                        profile.upiId != null ? 'Scan QR or Pay UPI: ${profile.upiId}' : 'Cash / UPI Accepted',
-                        style: const pw.TextStyle(color: _textMuted, fontSize: 7.5),
-                      ),
-                      pw.SizedBox(height: 2),
-                      pw.Text(
-                        'Payment Mode: Cash / UPI / Digital',
-                        style: const pw.TextStyle(color: _textMuted, fontSize: 7),
-                      ),
+                      pw.SizedBox(height: 4),
+                      if (hasPending) ...[
+                        pw.Text(
+                          'Scan QR code to pay pending balance: Rs. ${_currencyFormat.format(bill.remainingBalance)}',
+                          style: const pw.TextStyle(color: _redDue, fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                        ),
+                        pw.SizedBox(height: 1),
+                        pw.Text(
+                          profile.upiId != null ? 'UPI ID: ${profile.upiId}' : 'Cash / UPI Accepted',
+                          style: const pw.TextStyle(color: _textMuted, fontSize: 7),
+                        ),
+                      ] else ...[
+                        pw.Text(
+                          'All payments cleared for this memo. Thank you!',
+                          style: const pw.TextStyle(color: _greenPaid, fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                        ),
+                        pw.SizedBox(height: 1),
+                        pw.Text(
+                          'Official Computerized Payment Receipt',
+                          style: const pw.TextStyle(color: _textMuted, fontSize: 7),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -675,45 +900,70 @@ class PdfService {
             ),
           ),
         ),
-        pw.SizedBox(width: 16),
+        pw.SizedBox(width: 14),
 
-        // Right Column: Precise Financial Ledger
+        // Right Column: Precise Accounting Ledger
         pw.Container(
-          width: 200,
+          width: 210,
           child: pw.Column(
             children: [
-              _ledgerRow('Subtotal', _currencyFormat.format(bill.totalAmount)),
-              if (bill.advanceAmount > 0)
-                _ledgerRow('Advance Paid', '- ${_currencyFormat.format(bill.advanceAmount)}', isGreen: true),
-              if (bill.remainingBalance > 0 && bill.advanceAmount > 0)
-                _ledgerRow('Balance Due', _currencyFormat.format(bill.remainingBalance), isRed: true),
+              _ledgerRow('Total Order Amount', _currencyFormat.format(bill.totalAmount), isBold: true),
+              if (advanceVal > 0)
+                _ledgerRow('Initial Advance Paid', '(-) ${_currencyFormat.format(advanceVal)}', isGreen: true),
+              if (otherPaymentsVal > 0)
+                _ledgerRow('Subsequent Payments', '(-) ${_currencyFormat.format(otherPaymentsVal)}', isGreen: true),
+              if (bill.paidAmount > 0 && (advanceVal > 0 && otherPaymentsVal > 0))
+                _ledgerRow('Total Amount Paid', '(-) ${_currencyFormat.format(bill.paidAmount)}', isGreen: true, isBold: true),
               pw.Divider(color: _cardBorder, thickness: 0.8),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Grand Total',
-                    style: const pw.TextStyle(color: _navyDark, fontSize: 12, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.Text(
-                    'Rs. ${_currencyFormat.format(bill.totalAmount)}',
-                    style: const pw.TextStyle(color: _goldAccent, fontSize: 13, fontWeight: pw.FontWeight.bold),
-                  ),
-                ],
-              ),
-              if (bill.remainingBalance <= 0)
-                pw.Container(
-                  margin: const pw.EdgeInsets.only(top: 4),
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColor.fromHex('#E8F5E9'),
-                    borderRadius: pw.BorderRadius.circular(3),
-                  ),
-                  child: pw.Text(
-                    'FULLY PAID & SETTLED',
-                    style: const pw.TextStyle(color: _greenPaid, fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+              
+              // Prominent Balance Box
+              pw.Container(
+                width: double.infinity,
+                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: pw.BoxDecoration(
+                  color: hasPending ? PdfColor.fromHex('#FFF5F5') : PdfColor.fromHex('#E8F8EE'),
+                  borderRadius: pw.BorderRadius.circular(4),
+                  border: pw.Border.all(
+                    color: hasPending ? PdfColor.fromHex('#FFCDD2') : PdfColor.fromHex('#C8E6C9'),
+                    width: 0.8,
                   ),
                 ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text(
+                          hasPending ? 'NET BALANCE DUE:' : 'NET BALANCE:',
+                          style: pw.TextStyle(
+                            color: hasPending ? _redDue : _greenPaid,
+                            fontSize: 9.5,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          'Rs. ${_currencyFormat.format(bill.remainingBalance > 0 ? bill.remainingBalance : 0)}',
+                          style: pw.TextStyle(
+                            color: hasPending ? _redDue : _greenPaid,
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.SizedBox(height: 1),
+                    pw.Text(
+                      hasPending ? 'Payable on or before final delivery' : 'FULLY PAID & SETTLED',
+                      style: pw.TextStyle(
+                        color: hasPending ? _textMuted : _greenPaid,
+                        fontSize: 6.5,
+                        fontWeight: hasPending ? pw.FontWeight.normal : pw.FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -854,13 +1104,20 @@ class PdfService {
     );
   }
 
-  pw.Widget _ledgerRow(String label, String value, {bool isRed = false, bool isGreen = false}) {
+  pw.Widget _ledgerRow(String label, String value, {bool isRed = false, bool isGreen = false, bool isBold = false}) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 2.2),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label, style: const pw.TextStyle(color: _textMuted, fontSize: 8.5)),
+          pw.Text(
+            label,
+            style: pw.TextStyle(
+              color: isBold ? _navyDark : _textMuted,
+              fontSize: 8.5,
+              fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+            ),
+          ),
           pw.Text(
             'Rs. $value',
             style: pw.TextStyle(
@@ -870,7 +1127,7 @@ class PdfService {
                       ? _greenPaid
                       : _textDark,
               fontSize: 8.5,
-              fontWeight: isRed || isGreen ? pw.FontWeight.bold : pw.FontWeight.normal,
+              fontWeight: (isRed || isGreen || isBold) ? pw.FontWeight.bold : pw.FontWeight.normal,
             ),
           ),
         ],
