@@ -254,37 +254,28 @@ class PdfService {
                               color: _goldAccent,
                             ),
                           ),
-                          pw.SizedBox(height: -6),
+                          pw.SizedBox(height: -4),
                           pw.Text(
-                            'PHOTOGRAPHY STUDIO',
+                            profile.tagline != null && profile.tagline!.isNotEmpty
+                                ? profile.tagline!.toUpperCase()
+                                : 'PREMIUM RETAIL STORE & SERVICES',
                             style: pw.TextStyle(
                               font: serifFont,
-                              fontSize: 13,
+                              fontSize: 9,
                               fontWeight: pw.FontWeight.bold,
                               color: _navyDark,
-                              letterSpacing: 2.2,
+                              letterSpacing: 1.5,
                             ),
                           ),
                           pw.SizedBox(height: 2),
                           pw.Text(
-                            '4K VIDEO MIXING & DIGITAL LAB',
+                            'OFFICIAL COMPUTERIZED CASH MEMO',
                             style: pw.TextStyle(
                               font: serifFont,
-                              fontSize: 8,
+                              fontSize: 7.5,
                               fontWeight: pw.FontWeight.bold,
                               color: _goldAccent,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          pw.SizedBox(height: 3),
-                          pw.Text(
-                            profile.tagline != null && profile.tagline!.isNotEmpty
-                                ? profile.tagline!
-                                : 'Capturing Memory, Creating Story',
-                            style: const pw.TextStyle(
-                              fontSize: 8.5,
-                              color: _textMuted,
-                              fontStyle: pw.FontStyle.italic,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ],
@@ -507,7 +498,7 @@ class PdfService {
                 pw.Text(
                   bill.notes != null && bill.notes!.isNotEmpty
                       ? 'Note: ${bill.notes}'
-                      : 'Order Category: Studio Portrait & Lab Work',
+                      : 'Order Category: Commercial & Retail Order',
                   style: const pw.TextStyle(color: _textMuted, fontSize: 8),
                 ),
               ],
