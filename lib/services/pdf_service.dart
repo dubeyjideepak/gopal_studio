@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
@@ -77,10 +78,16 @@ class PdfService {
     } catch (_) {}
 
     pw.MemoryImage? studioLogoImage;
-    try {
-      final logoData = await rootBundle.load('assets/images/gopal_studio_logo.png');
-      studioLogoImage = pw.MemoryImage(logoData.buffer.asUint8List());
-    } catch (_) {}
+    if (profile.logoPath != null && File(profile.logoPath!).existsSync()) {
+      try {
+        studioLogoImage = pw.MemoryImage(File(profile.logoPath!).readAsBytesSync());
+      } catch (_) {}
+    } else if (profile.businessName.toLowerCase().contains('gopal')) {
+      try {
+        final logoData = await rootBundle.load('assets/images/gopal_studio_logo.png');
+        studioLogoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+      } catch (_) {}
+    }
 
     // Fallbacks if bundle loading has edge case
     final defaultScript = scriptFont ?? pw.Font.helveticaBold();
@@ -1044,7 +1051,7 @@ class PdfService {
                   ),
                 ),
                 pw.Text(
-                  'Gopal Photography Studio',
+                  profile.businessName,
                   style: const pw.TextStyle(color: _goldAccent, fontSize: 7),
                 ),
               ],
@@ -1060,7 +1067,7 @@ class PdfService {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text(
-              'Gopal Photography Studio & Video Mixing Lab  |  Lalganj Ajhara, Pratapgarh, UP',
+              '${profile.businessName}${profile.address != null ? "  |  ${profile.address}" : ""}',
               style: const pw.TextStyle(color: _textMuted, fontSize: 7),
             ),
             pw.Text(

@@ -129,4 +129,87 @@ void main() {
     final file = File('/tmp/gopal_cash_memo_settled.pdf');
     await file.writeAsBytes(pdfBytes);
   });
+
+  test('PdfService generates generic studio cash memo with custom branding & camera crest', () async {
+    final bill = Bill(
+      id: 'test-generic',
+      billNumber: 108,
+      customerId: 'cust-108',
+      customerName: 'Vikram Malhotra',
+      customerMobile: '9812345678',
+      createdAt: DateTime(2026, 10, 12, 11, 30),
+      deliveryDate: DateTime(2026, 10, 25),
+      items: const [
+        BillItem(
+          id: 'item-1',
+          particulars: 'Wedding Karizma Album (Silk Matte)',
+          size: '12X36 | 32 Sheets',
+          quantity: 1,
+          rate: 14000,
+          amount: 14000,
+        ),
+        BillItem(
+          id: 'item-2',
+          particulars: 'Pre-Wedding Drone & 4K Teaser Video',
+          size: '4K UHD | 64GB Pen Drive',
+          quantity: 1,
+          rate: 16000,
+          amount: 16000,
+        ),
+        BillItem(
+          id: 'item-3',
+          particulars: 'Designer Canvas Frame (Italian Wood)',
+          size: '20X30 Royal Frame',
+          quantity: 1,
+          rate: 2500,
+          amount: 2500,
+        ),
+      ],
+      totalAmount: 32500,
+      advanceAmount: 10000,
+      balanceAmount: 10000,
+      paidAmount: 22500,
+      status: BillStatus.partial,
+      paymentHistory: [
+        PaymentEntry(
+          id: 'pay-1',
+          amount: 10000,
+          type: PaymentType.cash,
+          date: DateTime(2026, 10, 12, 11, 30),
+          note: 'Event Booking Advance Token',
+        ),
+        PaymentEntry(
+          id: 'pay-2',
+          amount: 12500,
+          type: PaymentType.upi,
+          date: DateTime(2026, 10, 18, 16, 45),
+          note: 'Album Design & Video Cut Approval',
+          upiRef: 'UPI/729182930192',
+        ),
+      ],
+      notes: 'Deliver album in leatherette velvet suitcase box',
+    );
+
+    final profile = BusinessProfile(
+      id: 'generic-profile',
+      businessName: 'ROYAL STUDIO',
+      ownerName: 'Studio Owner',
+      tagline: 'Capturing Memory, Creating Story',
+      address: 'Main Market Road, City Center',
+      phone1: '9876543210',
+      phone2: '9876543211',
+      youtubeChannel: '@RoyalStudioOfficial',
+      instagramHandle: '@royal_studio_official',
+      upiId: 'royalstudio@upi',
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 10, 12),
+    );
+
+    final pdfBytes = await PdfService.instance.generateBillPdf(bill, profile);
+    expect(pdfBytes, isNotNull);
+    expect(pdfBytes.length, greaterThan(1000));
+
+    final file = File('/tmp/generic_studio_memo_sample.pdf');
+    await file.writeAsBytes(pdfBytes);
+  });
 }
